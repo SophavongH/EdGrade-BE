@@ -22,9 +22,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    // Allow all vercel.app subdomains
+    if (
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/.*\.vercel\.app$/.test(origin)
+    ) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
@@ -34,7 +37,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-// ADD THIS LINE to handle preflight requests for all routes
 app.options("*", cors());
 
 app.use(express.json({ limit: '20mb' }));
