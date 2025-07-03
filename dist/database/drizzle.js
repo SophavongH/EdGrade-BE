@@ -41,6 +41,7 @@ const schema_1 = require("./schema");
 dotenv.config();
 const pool = new pg_1.Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    // Remove or comment out the ssl property for local Postgres!
+    // ssl: { rejectUnauthorized: false },
 });
-exports.db = (0, node_postgres_1.drizzle)(pool, { schema: { usersTable: schema_1.usersTable } });
+exports.db = (0, node_postgres_1.drizzle)(pool, { schema: { usersTable: schema_1.usersTable, students: schema_1.students, classrooms: schema_1.classrooms, classroomStudents: schema_1.classroomStudents, reportCards: schema_1.reportCards, reportCardScores: schema_1.reportCardScores } });
