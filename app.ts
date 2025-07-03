@@ -13,7 +13,17 @@ import userSubjectsRouter from "./routes/userSubjects";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  "https://edgrade.vercel.app",
+  "https://edgrade-10m6n6as-sophavonghs-projects.vercel.app"
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true, // if you use cookies/auth
+}));
+
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
