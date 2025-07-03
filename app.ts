@@ -16,7 +16,7 @@ const app = express();
 
 const allowedOrigins = [
   "https://edgrade.vercel.app",
-  "https://edgrade-10m6n6as-sophavonghs-projects.vercel.app",
+  "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
   "https://edgrade-git-main-sophavonghs-projects.vercel.app"
 ];
 
