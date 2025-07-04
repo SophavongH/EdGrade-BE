@@ -190,7 +190,17 @@ router.post("/:id/send-sms", async (req, res) => {
             const formattedPhone = toPlasgateFormat(student.parentPhone);
             const token = crypto_1.default.randomBytes(32).toString("hex");
             const reportUrl = `${process.env.FRONTEND_URL}/report/${token}`;
-            const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name}: ${reportUrl}`;
+            // Fetch the report card to get its title
+            const [reportCard] = await drizzle_1.db.select().from(schema_1.reportCards).where((0, drizzle_orm_1.eq)(schema_1.reportCards.id, reportCardId));
+            const reportCardTitle = reportCard?.title || "";
+            const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name} ប្រចាំ ${reportCardTitle}: ${reportUrl}`;
+            // Insert the token into the DB (create or update)
+            await drizzle_1.db.insert(schema_1.reportCardTokens).values({
+                studentId: student.id,
+                reportCardId,
+                token,
+                // createdAt will default to now
+            }).onConflictDoNothing(); // Prevent duplicate tokens for same student/report
             console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
             try {
                 const response = await axios_1.default.post(`https://cloudapi.plasgate.com/rest/send?private_key=${process.env.PLASGATE_API_KEY}`, {

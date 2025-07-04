@@ -204,7 +204,18 @@ router.post("/:id/send-sms", async (req, res) => {
       const formattedPhone = toPlasgateFormat(student.parentPhone);
       const token = crypto.randomBytes(32).toString("hex");
       const reportUrl = `${process.env.FRONTEND_URL}/report/${token}`;
-      const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name}: ${reportUrl}`;
+      // Fetch the report card to get its title
+      const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, reportCardId));
+      const reportCardTitle = reportCard?.title || "";
+      const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name} ប្រចាំ ${reportCardTitle}: ${reportUrl}`;
+
+      // Insert the token into the DB (create or update)
+      await db.insert(reportCardTokens).values({
+        studentId: student.id,
+        reportCardId,
+        token,
+        // createdAt will default to now
+      }).onConflictDoNothing(); // Prevent duplicate tokens for same student/report
 
       console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
 
