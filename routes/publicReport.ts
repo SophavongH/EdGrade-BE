@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "../database/drizzle";
-import { reportCardTokens, students, reportCards, reportCardScores } from "../database/schema";
+import { reportCardTokens, students, reportCards, reportCardScores, classroomStudents } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 
 const router = Router();
@@ -18,10 +18,21 @@ router.get("/report/:token", async (req, res) => {
   const [score] = await db.select().from(reportCardScores)
     .where(and(eq(reportCardScores.reportCardId, row.reportCardId), eq(reportCardScores.studentId, row.studentId)));
 
+  // Fetch total students in the classroom
+  let totalStudents = 0;
+  if (reportCard) {
+    totalStudents = await db
+      .select()
+      .from(classroomStudents)
+      .where(eq(classroomStudents.classroomId, reportCard.classroomId))
+      .then(rows => rows.length);
+  }
+
   res.json({
     student,
     reportCard,
     score: score ? score.scores : null,
+    totalStudents, // <-- add this
   });
 });
 
