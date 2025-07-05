@@ -28,6 +28,8 @@ router.get("/report/:token", async (req, res) => {
       .then(rows => rows.length);
   }
 
+  console.log("Total students in classroom:", totalStudents);
+
   res.json({
     student,
     reportCard,
