@@ -22,7 +22,7 @@ export const classrooms = pgTable("classrooms", {
 
 export const students = pgTable('students', {
   id: uuid('id').primaryKey().defaultRandom(),
-  studentId: varchar('student_id', { length: 8 }).unique(), // remove .notNull().default('')
+  studentId: varchar('student_id', { length: 8 }).unique(),
   name: varchar('name', { length: 255 }).notNull(),
   avatar: text('avatar'),
   gender: text('gender').notNull(),
