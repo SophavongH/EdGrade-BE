@@ -19,11 +19,11 @@ const allowedOrigins = [
   "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
   "https://edgrade-git-main-sophavonghs-projects.vercel.app",
   "https://www.edgrade.me",
-  "https://edgrade.me" // <-- Add this line!
+  "https://edgrade.me"
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin) return callback(null, true);
     if (
       allowedOrigins.includes(origin) ||
@@ -36,9 +36,10 @@ app.use(cors({
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-}));
+};
 
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // <-- Ensure this uses the same options
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
@@ -48,7 +49,6 @@ app.use("/api", publicReportRoutes);
 
 // Auth routes (no JWT)
 app.use("/api/auth", authRoutes);
-
 
 // Protected routes (require JWT)
 app.use("/api/classrooms", authenticateJWT, classroomRoutes);
