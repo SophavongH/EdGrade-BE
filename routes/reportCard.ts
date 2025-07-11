@@ -17,6 +17,35 @@ type ScoreObj = {
 
 const router = Router();
 
+const ALLOWED_SUBJECT_KEYS = [
+  "khmerLiterature",
+  "mathematics",
+  "biology",
+  "chemistry",
+  "physics",
+  "history",
+  // ...add all your subject keys here
+];
+
+function cleanScoreObj(scoreObj: ScoreObj): ScoreObj {
+  const cleaned: ScoreObj = {
+    absent: "",
+    total: "",
+    average: "",
+    grade: "",
+    rank: "",
+  };
+  for (const key in scoreObj) {
+    if (
+      ["absent", "total", "average", "grade", "rank"].includes(key) ||
+      ALLOWED_SUBJECT_KEYS.includes(key)
+    ) {
+      cleaned[key] = scoreObj[key];
+    }
+  }
+  return cleaned;
+}
+
 // List report cards for a classroom (only for the classroom owner)
 router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
@@ -87,12 +116,10 @@ router.post("/:id/scores", async (req, res) => {
   const { scores } = req.body;
   try {
     for (const [studentId, scoreObjRaw] of Object.entries(scores)) {
-      const scoreObj = scoreObjRaw as ScoreObj;
+      const scoreObj = cleanScoreObj(scoreObjRaw as ScoreObj);
 
-      // Defensive: skip if no studentId or scoreObj
       if (!studentId || !scoreObj) continue;
 
-      // Defensive: ensure all required fields are present
       await db
         .insert(reportCardScores)
         .values({
@@ -119,7 +146,7 @@ router.post("/:id/scores", async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
-    console.error("Failed to save scores:", err); // <--- Add this line
+    console.error("Failed to save scores:", err);
     res.status(500).json({ error: "Failed to save scores" });
   }
 });
