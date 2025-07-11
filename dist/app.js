@@ -19,13 +19,15 @@ const app = (0, express_1.default)();
 const allowedOrigins = [
     "https://edgrade.vercel.app",
     "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
-    "https://edgrade-git-main-sophavonghs-projects.vercel.app"
+    "https://edgrade-git-main-sophavonghs-projects.vercel.app",
+    "https://www.edgrade.me",
+    "https://edgrade.me"
 ];
-app.use((0, cors_1.default)({
+const corsOptions = {
     origin: (origin, callback) => {
+        console.log("CORS Origin:", origin); // <-- Add this line
         if (!origin)
             return callback(null, true);
-        // Allow all vercel.app subdomains
         if (allowedOrigins.includes(origin) ||
             /^https:\/\/.*\.vercel\.app$/.test(origin)) {
             return callback(null, true);
@@ -34,9 +36,10 @@ app.use((0, cors_1.default)({
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-}));
-app.options("*", (0, cors_1.default)());
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+};
+app.use((0, cors_1.default)(corsOptions));
+app.options("*", (0, cors_1.default)(corsOptions)); // <-- Ensure this uses the same options
 app.use(express_1.default.json({ limit: '20mb' }));
 app.use(express_1.default.urlencoded({ limit: '20mb', extended: true }));
 // Public routes (no JWT)

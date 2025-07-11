@@ -22,7 +22,7 @@ exports.classrooms = (0, pg_core_1.pgTable)("classrooms", {
 });
 exports.students = (0, pg_core_1.pgTable)('students', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
-    studentId: (0, pg_core_1.varchar)('student_id', { length: 8 }).unique(), // remove .notNull().default('')
+    studentId: (0, pg_core_1.varchar)('student_id', { length: 8 }).unique(),
     name: (0, pg_core_1.varchar)('name', { length: 255 }).notNull(),
     avatar: (0, pg_core_1.text)('avatar'),
     gender: (0, pg_core_1.text)('gender').notNull(),

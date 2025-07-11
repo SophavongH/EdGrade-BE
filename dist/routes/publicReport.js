@@ -26,6 +26,7 @@ router.get("/report/:token", async (req, res) => {
             .where((0, drizzle_orm_1.eq)(schema_1.classroomStudents.classroomId, reportCard.classroomId))
             .then(rows => rows.length);
     }
+    console.log("Total students in classroom:", totalStudents);
     res.json({
         student,
         reportCard,
