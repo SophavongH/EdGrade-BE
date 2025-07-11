@@ -18,13 +18,13 @@ const allowedOrigins = [
   "https://edgrade.vercel.app",
   "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
   "https://edgrade-git-main-sophavonghs-projects.vercel.app",
-  "https://www.edgrade.me"
+  "https://www.edgrade.me",
+  "https://edgrade.me" // <-- Add this line!
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    // Allow all vercel.app subdomains
     if (
       allowedOrigins.includes(origin) ||
       /^https:\/\/.*\.vercel\.app$/.test(origin)
@@ -35,7 +35,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
 }));
 
 app.options("*", cors());
