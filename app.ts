@@ -18,7 +18,7 @@ const allowedOrigins = [
   "https://edgrade.vercel.app",
   "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
   "https://edgrade-git-main-sophavonghs-projects.vercel.app",
-  "https://edgrade.me"
+  "https://www.edgrade.me"
 ];
 
 app.use(cors({
