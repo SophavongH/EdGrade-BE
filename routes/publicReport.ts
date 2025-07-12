@@ -11,7 +11,7 @@ router.get("/report/:token", async (req, res) => {
     .select()
     .from(reportCardTokens)
     .where(eq(reportCardTokens.token, token));
-  if (!row) return res.status(404).json({ error: "Invalid or expired link" });
+  if (!row) return res.status(404).json({ error: "Invalid link" });
 
   const [student] = await db.select().from(students).where(eq(students.id, row.studentId));
   const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, row.reportCardId));
