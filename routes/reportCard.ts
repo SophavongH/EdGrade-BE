@@ -76,8 +76,8 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
 router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
   const classroomId = parseInt(req.params.classroomId);
-  const { title } = req.body;
-  if (!title) return res.status(400).json({ error: "Missing title" });
+  const { title, subjects } = req.body; // subjects: string[]
+  if (!title || !subjects) return res.status(400).json({ error: "Missing title or subjects" });
 
   // Only allow if user owns the classroom
   const [classroom] = await db.select().from(classrooms)
@@ -88,6 +88,7 @@ router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
     .values({
       classroomId,
       title,
+      subjects, // Save selected subjects
       createdBy: req.user.id,
     })
     .returning();
