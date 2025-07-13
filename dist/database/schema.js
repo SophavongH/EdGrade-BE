@@ -43,6 +43,7 @@ exports.reportCards = (0, pg_core_1.pgTable)('report_cards', {
     title: (0, pg_core_1.varchar)('title', { length: 255 }).notNull(),
     createdBy: (0, pg_core_1.uuid)('created_by').notNull(),
     createdAt: (0, pg_core_1.timestamp)('created_at', { withTimezone: true }).defaultNow(),
+    subjects: (0, pg_core_1.text)('subjects').array(), // <-- stores selected subjects
 });
 exports.reportCardScores = (0, pg_core_1.pgTable)("report_card_scores", {
     id: (0, pg_core_1.serial)("id").primaryKey(),

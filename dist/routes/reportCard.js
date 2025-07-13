@@ -10,6 +10,31 @@ const drizzle_1 = require("../database/drizzle");
 const schema_1 = require("../database/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const router = (0, express_1.Router)();
+const ALLOWED_SUBJECT_KEYS = [
+    "khmerLiterature",
+    "mathematics",
+    "biology",
+    "chemistry",
+    "physics",
+    "history",
+    // ...add all your subject keys here
+];
+function cleanScoreObj(scoreObj) {
+    const cleaned = {
+        absent: "",
+        total: "",
+        average: "",
+        grade: "",
+        rank: "",
+    };
+    for (const key in scoreObj) {
+        if (["absent", "total", "average", "grade", "rank"].includes(key) ||
+            ALLOWED_SUBJECT_KEYS.includes(key)) {
+            cleaned[key] = scoreObj[key];
+        }
+    }
+    return cleaned;
+}
 // List report cards for a classroom (only for the classroom owner)
 router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
     if (!req.user || !req.user.id)
@@ -40,9 +65,9 @@ router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
     if (!req.user || !req.user.id)
         return res.status(401).json({ error: "Unauthorized" });
     const classroomId = parseInt(req.params.classroomId);
-    const { title } = req.body;
-    if (!title)
-        return res.status(400).json({ error: "Missing title" });
+    const { title, subjects } = req.body; // subjects: string[]
+    if (!title || !subjects)
+        return res.status(400).json({ error: "Missing title or subjects" });
     // Only allow if user owns the classroom
     const [classroom] = await drizzle_1.db.select().from(schema_1.classrooms)
         .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.classrooms.id, classroomId), (0, drizzle_orm_1.eq)(schema_1.classrooms.userId, req.user.id)));
@@ -52,6 +77,7 @@ router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
         .values({
         classroomId,
         title,
+        subjects, // Save selected subjects
         createdBy: req.user.id,
     })
         .returning();
@@ -78,11 +104,9 @@ router.post("/:id/scores", async (req, res) => {
     const { scores } = req.body;
     try {
         for (const [studentId, scoreObjRaw] of Object.entries(scores)) {
-            const scoreObj = scoreObjRaw;
-            // Defensive: skip if no studentId or scoreObj
+            const scoreObj = cleanScoreObj(scoreObjRaw);
             if (!studentId || !scoreObj)
                 continue;
-            // Defensive: ensure all required fields are present
             await drizzle_1.db
                 .insert(schema_1.reportCardScores)
                 .values({
@@ -110,7 +134,7 @@ router.post("/:id/scores", async (req, res) => {
         res.json({ success: true });
     }
     catch (err) {
-        console.error("Failed to save scores:", err); // <--- Add this line
+        console.error("Failed to save scores:", err);
         res.status(500).json({ error: "Failed to save scores" });
     }
 });
@@ -246,5 +270,16 @@ router.post("/:id/send-sms", async (req, res) => {
     catch (err) {
         res.status(500).json({ error: "Failed to send report card SMS" });
     }
+});
+// Update subjects for a report card
+router.put("/report-cards/:id/subjects", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { subjects } = req.body;
+    if (!Array.isArray(subjects))
+        return res.status(400).json({ error: "Invalid subjects" });
+    await drizzle_1.db.update(schema_1.reportCards)
+        .set({ subjects })
+        .where((0, drizzle_orm_1.eq)(schema_1.reportCards.id, id));
+    res.json({ success: true });
 });
 exports.default = router;
