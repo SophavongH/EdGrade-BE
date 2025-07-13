@@ -13,7 +13,17 @@ router.get("/report/:token", async (req, res) => {
     .where(eq(reportCardTokens.token, token));
   if (!row) return res.status(404).json({ error: "Invalid link" });
 
-  const [student] = await db.select().from(students).where(eq(students.id, row.studentId));
+  const [student] = await db
+    .select({
+      id: students.id,
+      student_id: students.studentId, // <-- alias to match frontend
+      name: students.name,
+      gender: students.gender,
+      avatar: students.avatar,
+      // add other fields as needed
+    })
+    .from(students)
+    .where(eq(students.id, row.studentId));
   const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, row.reportCardId));
   const [score] = await db.select().from(reportCardScores)
     .where(and(eq(reportCardScores.reportCardId, row.reportCardId), eq(reportCardScores.studentId, row.studentId)));
