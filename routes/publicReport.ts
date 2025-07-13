@@ -18,16 +18,18 @@ router.get("/report/:token", async (req, res) => {
   const [score] = await db.select().from(reportCardScores)
     .where(and(eq(reportCardScores.reportCardId, row.reportCardId), eq(reportCardScores.studentId, row.studentId)));
 
+  // Use subjects from reportCard
+  const subjectsToShow = reportCard?.subjects || [];
+
   // Filter scores to only selected subjects
   let filteredScores: Record<string, unknown> = {};
-  if (score && reportCard && reportCard.subjects) {
+  if (score && subjectsToShow.length > 0) {
     const scoresObj = score.scores as Record<string, unknown>;
-    for (const key of reportCard.subjects) {
+    for (const key of subjectsToShow) {
       if (scoresObj[key] !== undefined) {
         filteredScores[key] = scoresObj[key];
       }
     }
-    // Optionally include absent, total, average, grade, rank
     ["absent", "total", "average", "grade", "rank"].forEach((k) => {
       if (scoresObj[k] !== undefined) filteredScores[k] = scoresObj[k];
     });
@@ -47,7 +49,7 @@ router.get("/report/:token", async (req, res) => {
     student,
     reportCard,
     score: filteredScores,
-    subjects: reportCard?.subjects || [],
+    subjects: subjectsToShow,
     totalStudents,
   });
 });

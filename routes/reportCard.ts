@@ -297,6 +297,7 @@ router.post("/:id/send-sms", async (req, res) => {
   }
 });
 
+// Update subjects for a report card
 router.put("/report-cards/:id/subjects", async (req, res) => {
   const id = parseInt(req.params.id);
   const { subjects } = req.body;

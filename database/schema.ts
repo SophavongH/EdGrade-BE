@@ -45,7 +45,7 @@ export const reportCards = pgTable('report_cards', {
   title: varchar('title', { length: 255 }).notNull(),
   createdBy: uuid('created_by').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  subjects: text('subjects').array(), // <-- Add this line
+  subjects: text('subjects').array(), // <-- stores selected subjects
 });
 
 export const reportCardScores = pgTable("report_card_scores", {
