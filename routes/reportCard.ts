@@ -298,7 +298,7 @@ router.post("/:id/send-sms", async (req, res) => {
 });
 
 // Update subjects for a report card
-router.put("/report-cards/:id/subjects", async (req, res) => {
+router.put("/:id/subjects", async (req, res) => {
   const id = parseInt(req.params.id);
   const { subjects } = req.body;
   if (!Array.isArray(subjects)) return res.status(400).json({ error: "Invalid subjects" });
