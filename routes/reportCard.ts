@@ -27,7 +27,7 @@ const ALLOWED_SUBJECT_KEYS = [
   // ...add all your subject keys here
 ];
 
-function cleanScoreObj(scoreObj: ScoreObj): ScoreObj {
+function cleanScoreObj(scoreObj: ScoreObj, selectedSubjects: string[]): ScoreObj {
   const cleaned: ScoreObj = {
     absent: "",
     total: "",
@@ -35,15 +35,19 @@ function cleanScoreObj(scoreObj: ScoreObj): ScoreObj {
     grade: "",
     rank: "",
   };
-  for (const key in scoreObj) {
-    if (
-      ["absent", "total", "average", "grade", "rank"].includes(key) ||
-      ALLOWED_SUBJECT_KEYS.includes(key)
-    ) {
+  // Keep only selected subjects
+  for (const key of selectedSubjects) {
+    if (scoreObj[key] !== undefined) {
       cleaned[key] = scoreObj[key];
     }
   }
-  return {...scoreObj};
+  // Always keep summary fields
+  ["absent", "total", "average", "grade", "rank"].forEach((key) => {
+    if (scoreObj[key] !== undefined) {
+      cleaned[key] = scoreObj[key];
+    }
+  });
+  return cleaned;
 }
 
 // List report cards for a classroom (only for the classroom owner)
@@ -115,9 +119,15 @@ router.delete("/:id", async (req, res) => {
 router.post("/:id/scores", async (req, res) => {
   const reportCardId = parseInt(req.params.id);
   const { scores } = req.body;
+
+  // Fetch selected subjects for this report card
+  const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, reportCardId));
+  const selectedSubjects: string[] = reportCard?.subjects || [];
+
   try {
     for (const [studentId, scoreObjRaw] of Object.entries(scores)) {
-      const scoreObj = cleanScoreObj(scoreObjRaw as ScoreObj);
+      // Clean the score object to only include selected subjects and summary fields
+      const scoreObj = cleanScoreObj(scoreObjRaw as ScoreObj, selectedSubjects);
 
       if (!studentId || !scoreObj) continue;
 
@@ -127,7 +137,7 @@ router.post("/:id/scores", async (req, res) => {
           reportCardId,
           studentId,
           absent: scoreObj.absent ?? "",
-          scores: scoreObj, // JSONB, includes all subjects
+          scores: scoreObj, // Only selected subjects and summary fields
           total: scoreObj.total ?? "",
           average: scoreObj.average ?? "",
           grade: scoreObj.grade ?? "",
@@ -137,7 +147,7 @@ router.post("/:id/scores", async (req, res) => {
           target: [reportCardScores.reportCardId, reportCardScores.studentId],
           set: {
             absent: scoreObj.absent ?? "",
-            scores: scoreObj,
+            scores: scoreObj, // Overwrite with cleaned object
             total: scoreObj.total ?? "",
             average: scoreObj.average ?? "",
             grade: scoreObj.grade ?? "",
