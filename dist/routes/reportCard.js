@@ -33,7 +33,7 @@ function cleanScoreObj(scoreObj) {
             cleaned[key] = scoreObj[key];
         }
     }
-    return cleaned;
+    return { ...scoreObj };
 }
 // List report cards for a classroom (only for the classroom owner)
 router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
@@ -113,7 +113,7 @@ router.post("/:id/scores", async (req, res) => {
                 reportCardId,
                 studentId,
                 absent: scoreObj.absent ?? "",
-                scores: scoreObj,
+                scores: scoreObj, // JSONB, includes all subjects
                 total: scoreObj.total ?? "",
                 average: scoreObj.average ?? "",
                 grade: scoreObj.grade ?? "",
@@ -134,7 +134,6 @@ router.post("/:id/scores", async (req, res) => {
         res.json({ success: true });
     }
     catch (err) {
-        console.error("Failed to save scores:", err);
         res.status(500).json({ error: "Failed to save scores" });
     }
 });
