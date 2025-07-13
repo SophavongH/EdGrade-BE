@@ -177,7 +177,17 @@ router.get("/report/:token", async (req, res) => {
   if (!row) return res.status(404).json({ error: "Invalid or expired link" });
 
   // Fetch student info
-  const [student] = await db.select().from(students).where(eq(students.id, row.studentId));
+  const [student] = await db
+    .select({
+      id: students.id,
+      student_id: students.studentId, // <-- alias to match frontend
+      name: students.name,
+      gender: students.gender,
+      avatar: students.avatar,
+      // add other fields as needed
+    })
+    .from(students)
+    .where(eq(students.id, row.studentId));
   // Fetch report card info
   const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, row.reportCardId));
   // Fetch scores
