@@ -16,11 +16,10 @@ router.get("/report/:token", async (req, res) => {
   const [student] = await db
     .select({
       id: students.id,
-      student_id: students.studentId, // <-- alias to match frontend
+      student_id: students.studentId,
       name: students.name,
       gender: students.gender,
       avatar: students.avatar,
-      // add other fields as needed
     })
     .from(students)
     .where(eq(students.id, row.studentId));

@@ -16,11 +16,10 @@ router.get("/report/:token", async (req, res) => {
     const [student] = await drizzle_1.db
         .select({
         id: schema_1.students.id,
-        student_id: schema_1.students.studentId, // <-- alias to match frontend
+        student_id: schema_1.students.studentId,
         name: schema_1.students.name,
         gender: schema_1.students.gender,
         avatar: schema_1.students.avatar,
-        // add other fields as needed
     })
         .from(schema_1.students)
         .where((0, drizzle_orm_1.eq)(schema_1.students.id, row.studentId));
