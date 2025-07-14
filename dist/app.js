@@ -14,6 +14,7 @@ const reportCard_1 = __importDefault(require("./routes/reportCard"));
 const publicReport_1 = __importDefault(require("./routes/publicReport"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const userSubjects_1 = __importDefault(require("./routes/userSubjects"));
+const user_1 = __importDefault(require("./routes/user"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const allowedOrigins = [
@@ -52,4 +53,5 @@ app.use("/api/students", auth_2.authenticateJWT, student_1.default);
 app.use("/api/report-cards", auth_2.authenticateJWT, reportCard_1.default);
 app.use("/api/admin", auth_2.authenticateJWT, admin_1.default);
 app.use("/api/user-subjects", auth_2.authenticateJWT, userSubjects_1.default);
+app.use("/api/user", auth_2.authenticateJWT, user_1.default);
 exports.default = app;

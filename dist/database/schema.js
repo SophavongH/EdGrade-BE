@@ -6,6 +6,7 @@ exports.ROLE_ENUM = (0, pg_core_1.pgEnum)('role', ['admin', 'user']);
 exports.usersTable = (0, pg_core_1.pgTable)('users_table', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
     name: (0, pg_core_1.varchar)('name', { length: 255 }),
+    avatar: (0, pg_core_1.text)('avatar'),
     email: (0, pg_core_1.text)('email').notNull().unique(),
     role: (0, exports.ROLE_ENUM)('role').notNull().default('user'),
     password: (0, pg_core_1.text)('password').notNull(),
