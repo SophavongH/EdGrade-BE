@@ -9,6 +9,7 @@ import reportCardRouter from "./routes/reportCard";
 import publicReportRoutes from "./routes/publicReport";
 import adminRoutes from "./routes/admin";
 import userSubjectsRouter from "./routes/userSubjects";
+import userRouter from "./routes/user";
 
 dotenv.config();
 
@@ -57,5 +58,6 @@ app.use("/api/students", authenticateJWT, studentRoutes);
 app.use("/api/report-cards", authenticateJWT, reportCardRouter);
 app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/user-subjects", authenticateJWT, userSubjectsRouter);
+app.use("/api/user", authenticateJWT, userRouter);
 
 export default app;
