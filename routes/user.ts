@@ -24,12 +24,14 @@ router.get("/profile", authenticateJWT, async (req, res) => {
 router.put("/profile", authenticateJWT, async (req, res) => {
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
   const { name, email, avatar, password } = req.body;
+  console.log("Received password:", password); // <-- Add this
   const updateData: any = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
   if (avatar) updateData.avatar = avatar;
   if (password && password.trim() !== "") {
-    updateData.password = await bcrypt.hash(password, 10); 
+    updateData.password = await bcrypt.hash(password, 10);
+    console.log("Hashed password:", updateData.password); // <-- Add this
   }
   await db.update(usersTable).set(updateData).where(eq(usersTable.id, req.user.id));
   res.json({ success: true });

@@ -1,10 +1,14 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const schema_1 = require("../database/schema");
 const drizzle_1 = require("../database/drizzle");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("./auth");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const router = (0, express_1.Router)();
 // Get current user's profile
 router.get("/profile", auth_1.authenticateJWT, async (req, res) => {
@@ -32,8 +36,9 @@ router.put("/profile", auth_1.authenticateJWT, async (req, res) => {
         updateData.email = email;
     if (avatar)
         updateData.avatar = avatar;
-    if (password)
-        updateData.password = password; // hash if needed
+    if (password && password.trim() !== "") {
+        updateData.password = await bcryptjs_1.default.hash(password, 10);
+    }
     await drizzle_1.db.update(schema_1.usersTable).set(updateData).where((0, drizzle_orm_1.eq)(schema_1.usersTable.id, req.user.id));
     res.json({ success: true });
 });
