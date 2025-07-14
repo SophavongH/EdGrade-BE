@@ -4,6 +4,7 @@ import { db } from "../database/drizzle";
 import { eq } from "drizzle-orm";
 import { authenticateJWT } from "./auth";
 import bcrypt from "bcryptjs";
+import { uploadToImageKit } from "../ImageKituntil";
 
 const router = Router();
 
@@ -24,15 +25,22 @@ router.get("/profile", authenticateJWT, async (req, res) => {
 router.put("/profile", authenticateJWT, async (req, res) => {
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
   const { name, email, avatar, password } = req.body;
-  console.log("Received password:", password); // <-- Add this
   const updateData: any = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
-  if (avatar) updateData.avatar = avatar;
+
+  // Avatar upload logic
+  let avatarUrl = avatar;
+  if (avatar && avatar.startsWith("data:")) {
+    avatarUrl = await uploadToImageKit(avatar, `${name || "user"}_${Date.now()}.jpg`);
+  }
+  if (avatarUrl) updateData.avatar = avatarUrl;
+
+  // Password hashing
   if (password && password.trim() !== "") {
     updateData.password = await bcrypt.hash(password, 10);
-    console.log("Hashed password:", updateData.password); // <-- Add this
   }
+
   await db.update(usersTable).set(updateData).where(eq(usersTable.id, req.user.id));
   res.json({ success: true });
 });

@@ -9,6 +9,7 @@ const drizzle_1 = require("../database/drizzle");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("./auth");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const ImageKituntil_1 = require("../ImageKituntil");
 const router = (0, express_1.Router)();
 // Get current user's profile
 router.get("/profile", auth_1.authenticateJWT, async (req, res) => {
@@ -34,8 +35,14 @@ router.put("/profile", auth_1.authenticateJWT, async (req, res) => {
         updateData.name = name;
     if (email)
         updateData.email = email;
-    if (avatar)
-        updateData.avatar = avatar;
+    // Avatar upload logic
+    let avatarUrl = avatar;
+    if (avatar && avatar.startsWith("data:")) {
+        avatarUrl = await (0, ImageKituntil_1.uploadToImageKit)(avatar, `${name || "user"}_${Date.now()}.jpg`);
+    }
+    if (avatarUrl)
+        updateData.avatar = avatarUrl;
+    // Password hashing
     if (password && password.trim() !== "") {
         updateData.password = await bcryptjs_1.default.hash(password, 10);
     }

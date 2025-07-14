@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../database/drizzle";
 import { students } from "../database/schema";
 import { eq, and } from "drizzle-orm";
+import { uploadToImageKit } from "../ImageKituntil";
 
 
 declare global {
@@ -38,18 +39,19 @@ router.post("/", async (req, res) => {
   }
   try {
     const { name, avatar, gender, parentPhone, dob, address } = req.body;
-    if (!name || !gender) {
-      return res.status(400).json({ error: "Missing required fields" });
+    let avatarUrl = "";
+    if (avatar && avatar.startsWith("data:")) {
+      avatarUrl = await uploadToImageKit(avatar, `${name}_${Date.now()}.jpg`);
     }
     const [student] = await db
       .insert(students)
       .values({
         name,
-        avatar,
-        gender,
-        parentPhone,
         dob,
+        gender,
         address,
+        parentPhone,
+        avatar: avatarUrl, // Save ImageKit URL
         userId: req.user.id,
         // Do NOT set studentId here!
       })
@@ -69,13 +71,16 @@ router.put("/:id", async (req, res) => {
   }
   const { id } = req.params;
   const { name, avatar, gender, parentPhone, dob, address } = req.body;
+  let avatarUrl = avatar;
+  if (avatar && avatar.startsWith("data:")) {
+    avatarUrl = await uploadToImageKit(avatar, `${name}_${Date.now()}.jpg`);
+  }
   const result = await db
     .update(students)
-    .set({ name, avatar, gender, parentPhone, dob, address })
+    .set({ name, avatar: avatarUrl, gender, parentPhone, dob, address })
     .where(and(eq(students.id, id), eq(students.userId, req.user.id)))
     .returning();
   if (result.length === 0) return res.status(404).json({ message: "Not found" });
-  // Return studentId in the response
   res.json(result[0]);
 });
 

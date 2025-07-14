@@ -4,6 +4,7 @@ const express_1 = require("express");
 const drizzle_1 = require("../database/drizzle");
 const schema_1 = require("../database/schema");
 const drizzle_orm_1 = require("drizzle-orm");
+const ImageKituntil_1 = require("../ImageKituntil");
 const router = (0, express_1.Router)();
 // GET all students for the current user
 router.get("/", async (req, res) => {
@@ -24,18 +25,19 @@ router.post("/", async (req, res) => {
     }
     try {
         const { name, avatar, gender, parentPhone, dob, address } = req.body;
-        if (!name || !gender) {
-            return res.status(400).json({ error: "Missing required fields" });
+        let avatarUrl = "";
+        if (avatar && avatar.startsWith("data:")) {
+            avatarUrl = await (0, ImageKituntil_1.uploadToImageKit)(avatar, `${name}_${Date.now()}.jpg`);
         }
         const [student] = await drizzle_1.db
             .insert(schema_1.students)
             .values({
             name,
-            avatar,
-            gender,
-            parentPhone,
             dob,
+            gender,
             address,
+            parentPhone,
+            avatar: avatarUrl, // Save ImageKit URL
             userId: req.user.id,
             // Do NOT set studentId here!
         })
@@ -55,14 +57,17 @@ router.put("/:id", async (req, res) => {
     }
     const { id } = req.params;
     const { name, avatar, gender, parentPhone, dob, address } = req.body;
+    let avatarUrl = avatar;
+    if (avatar && avatar.startsWith("data:")) {
+        avatarUrl = await (0, ImageKituntil_1.uploadToImageKit)(avatar, `${name}_${Date.now()}.jpg`);
+    }
     const result = await drizzle_1.db
         .update(schema_1.students)
-        .set({ name, avatar, gender, parentPhone, dob, address })
+        .set({ name, avatar: avatarUrl, gender, parentPhone, dob, address })
         .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.students.id, id), (0, drizzle_orm_1.eq)(schema_1.students.userId, req.user.id)))
         .returning();
     if (result.length === 0)
         return res.status(404).json({ message: "Not found" });
-    // Return studentId in the response
     res.json(result[0]);
 });
 // GET single student by id
