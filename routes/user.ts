@@ -3,6 +3,7 @@ import { usersTable } from "../database/schema";
 import { db } from "../database/drizzle";
 import { eq } from "drizzle-orm";
 import { authenticateJWT } from "./auth";
+import bcrypt from "bcryptjs";
 
 const router = Router();
 
@@ -27,7 +28,9 @@ router.put("/profile", authenticateJWT, async (req, res) => {
   if (name) updateData.name = name;
   if (email) updateData.email = email;
   if (avatar) updateData.avatar = avatar;
-  if (password) updateData.password = password; // hash if needed
+  if (password && password.trim() !== "") {
+    updateData.password = await bcrypt.hash(password, 10); // <-- hash password here
+  }
   await db.update(usersTable).set(updateData).where(eq(usersTable.id, req.user.id));
   res.json({ success: true });
 });
