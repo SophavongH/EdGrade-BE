@@ -29,7 +29,7 @@ router.put("/profile", authenticateJWT, async (req, res) => {
   if (email) updateData.email = email;
   if (avatar) updateData.avatar = avatar;
   if (password && password.trim() !== "") {
-    updateData.password = await bcrypt.hash(password, 10); // <-- hash password here
+    updateData.password = await bcrypt.hash(password, 10); 
   }
   await db.update(usersTable).set(updateData).where(eq(usersTable.id, req.user.id));
   res.json({ success: true });
