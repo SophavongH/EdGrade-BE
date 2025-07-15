@@ -21,7 +21,8 @@ const allowedOrigins = [
   "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
   "https://edgrade-git-main-sophavonghs-projects.vercel.app",
   "https://www.edgrade.me",
-  "https://edgrade.me"
+  "https://edgrade.me",
+  "https://api.edgrade.me" // <-- Add your backend custom domain here!
 ];
 
 const corsOptions = {
@@ -39,7 +40,7 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  exposedHeaders: ["Set-Cookie"], // <-- Add this line for cookie debugging
+  exposedHeaders: ["Set-Cookie"],
 };
 
 app.use(cors(corsOptions));
