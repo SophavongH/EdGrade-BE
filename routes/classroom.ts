@@ -22,7 +22,8 @@ router.get("/", async (req, res) => {
     const students = await db
       .select()
       .from(classroomStudents)
-      .where(eq(classroomStudents.classroomId, cls.id)); // <-- Use classroomStudents.classroomId
+      .where(eq(classroomStudents.classroomId, cls.id));
+    console.log("Classroom", cls.id, "students:", students); // <-- Add here
     const studentCount = students.length;
 
     result.push({
