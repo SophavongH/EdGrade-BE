@@ -217,6 +217,20 @@ router.post("/:id/send-sms", async (req, res) => {
   const reportCardId = parseInt(req.params.id);
   const { studentIds } = req.body;
 
+  console.log("SMS Route - reportCardId:", reportCardId);
+  console.log("SMS Route - studentIds:", studentIds);
+  console.log("SMS Route - user:", req.user);
+
+  if (!req.user || !req.user.id) {
+    console.error("SMS Route - No user authenticated");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!studentIds || !Array.isArray(studentIds)) {
+    console.error("SMS Route - Invalid studentIds:", studentIds);
+    return res.status(400).json({ error: "Missing or invalid studentIds" });
+  }
+
   function toPlasgateFormat(phone: string): string {
     if (!phone) return "";
     phone = phone.replace(/[\s\-\(\)]/g, "");
@@ -227,6 +241,32 @@ router.post("/:id/send-sms", async (req, res) => {
   }
 
   try {
+    // Check if report card exists and user has access
+    const [reportCard] = await db
+      .select()
+      .from(reportCards)
+      .where(eq(reportCards.id, reportCardId));
+    
+    if (!reportCard) {
+      console.error("SMS Route - Report card not found:", reportCardId);
+      return res.status(404).json({ error: "Report card not found" });
+    }
+
+    // Check classroom ownership
+    const [classroom] = await db
+      .select()
+      .from(classrooms)
+      .where(and(
+        eq(classrooms.id, reportCard.classroomId),
+        eq(classrooms.userId, req.user.id)
+      ));
+
+    if (!classroom) {
+      console.error("SMS Route - Classroom access denied");
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    // Fetch students
     const studentList = await db
       .select({
         id: students.id,
@@ -235,6 +275,8 @@ router.post("/:id/send-sms", async (req, res) => {
       })
       .from(students)
       .where(inArray(students.id, studentIds));
+
+    console.log("SMS Route - Found students:", studentList.length);
 
     const results = [];
 
@@ -252,27 +294,39 @@ router.post("/:id/send-sms", async (req, res) => {
       const formattedPhone = toPlasgateFormat(student.parentPhone);
       const token = crypto.randomBytes(32).toString("hex");
       const reportUrl = `${process.env.FRONTEND_URL}/report/${token}`;
-      // Fetch the report card to get its title
-      const [reportCard] = await db.select().from(reportCards).where(eq(reportCards.id, reportCardId));
-      const reportCardTitle = reportCard?.title || "";
+      const reportCardTitle = reportCard.title || "";
       const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name} ប្រចាំ ${reportCardTitle}: ${reportUrl}`;
 
+      console.log("SMS Route - Processing student:", student.name, "Phone:", formattedPhone);
+
       // Insert or update the token for this student/reportCard
-      await db.insert(reportCardTokens).values({
-        studentId: student.id,
-        reportCardId,
-        token,
-      }).onConflictDoUpdate({
-        target: [reportCardTokens.studentId, reportCardTokens.reportCardId],
-        set: {
-          token, // override with new token
-          createdAt: new Date(), // update timestamp
-          used: false, // reset used flag
-        },
-      });
+      try {
+        await db.insert(reportCardTokens).values({
+          studentId: student.id,
+          reportCardId,
+          token,
+        }).onConflictDoUpdate({
+          target: [reportCardTokens.studentId, reportCardTokens.reportCardId],
+          set: {
+            token, // override with new token
+            createdAt: new Date(), // update timestamp
+            used: false, // reset used flag
+          },
+        });
+        console.log("SMS Route - Token saved for student:", student.name);
+      } catch (tokenError) {
+        console.error("SMS Route - Token save error:", tokenError);
+        results.push({
+          student: student.name,
+          phone: student.parentPhone,
+          formattedPhone,
+          status: "failed",
+          error: "Failed to save token",
+        });
+        continue;
+      }
 
-      console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
-
+      // Send SMS
       try {
         const response = await axios.post(
           `https://cloudapi.plasgate.com/rest/send?private_key=${process.env.PLASGATE_API_KEY}`,
@@ -288,7 +342,7 @@ router.post("/:id/send-sms", async (req, res) => {
             },
           }
         );
-        console.log("PlasGate response:", response.data);
+        console.log("SMS Route - PlasGate response for", student.name, ":", response.data);
 
         results.push({
           student: student.name,
@@ -299,7 +353,7 @@ router.post("/:id/send-sms", async (req, res) => {
           reportUrl,
         });
       } catch (smsError: any) {
-        console.error("PlasGate error:", smsError.response?.data || smsError.message);
+        console.error("SMS Route - PlasGate error for", student.name, ":", smsError.response?.data || smsError.message);
         results.push({
           student: student.name,
           phone: student.parentPhone,
@@ -310,6 +364,8 @@ router.post("/:id/send-sms", async (req, res) => {
       }
     }
 
+    console.log("SMS Route - Final results:", results);
+
     res.json({
       success: true,
       results,
@@ -319,8 +375,11 @@ router.post("/:id/send-sms", async (req, res) => {
       skippedCount: results.filter((r) => r.status === "skipped").length,
     });
   } catch (err: any) {
-    console.error("Send SMS error:", err); // Add error logging
-    res.status(500).json({ error: "Failed to send report card SMS" });
+    console.error("SMS Route - Main error:", err);
+    res.status(500).json({ 
+      error: "Failed to send report card SMS",
+      details: err.message 
+    });
   }
 });
 
