@@ -68,6 +68,7 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
       createdBy: reportCards.createdBy,
       createdAt: reportCards.createdAt,
       creatorName: usersTable.name,
+      subjects: reportCards.subjects, // <-- ADD THIS LINE
     })
     .from(reportCards)
     .where(eq(reportCards.classroomId, classroomId))
