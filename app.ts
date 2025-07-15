@@ -26,7 +26,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    console.log("CORS Origin:", origin); // <-- Add this line
+    console.log("CORS Origin:", origin);
     if (!origin) return callback(null, true);
     if (
       allowedOrigins.includes(origin) ||
@@ -39,10 +39,11 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  exposedHeaders: ["Set-Cookie"], // <-- Add this line for cookie debugging
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // <-- Ensure this uses the same options
+app.options("*", cors(corsOptions));
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
