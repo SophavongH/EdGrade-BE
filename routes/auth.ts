@@ -10,14 +10,11 @@ const router = Router();
 
 // JWT authentication middleware
 export function authenticateJWT(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "No token" });
-
-  const token = authHeader.split(" ")[1];
+  const token = req.cookies.token; // <-- get token from cookie
+  if (!token) return res.status(401).json({ error: "No token" });
   try {
-    // The JWT payload includes id, email, name, role
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    req.user = decoded as Express.User; // <-- assign all fields, not just id/email
+    req.user = decoded as Express.User;
     next();
   } catch {
     return res.status(401).json({ error: "Invalid token" });
@@ -27,26 +24,20 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
     const [user] = await db
       .select()
       .from(usersTable)
       .where(eq(usersTable.email, email));
-
     if (!user) {
       return res.status(401).json({ success: false, error: "Email is invalid" });
     }
-
-    // Check if the account is deactivated
     if (user.status === "deactivated") {
       return res.status(403).json({ error: "Account is suspended." });
     }
-
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ success: false, error: "Password is invalid" });
     }
-
     const token = jwt.sign(
       {
         id: user.id,
@@ -57,11 +48,16 @@ router.post("/login", async (req: Request, res: Response) => {
       process.env.JWT_SECRET!,
       { expiresIn: "12h" }
     );
-
-    // Return user object!
+    // Set JWT as HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // only send over HTTPS in production
+      sameSite: "strict",
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+      path: "/",
+    });
     return res.json({
       success: true,
-      token,
       role: user.role,
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
@@ -89,6 +85,11 @@ router.get("/me", authenticateJWT, async (req, res) => {
     name: user.name,
     role: user.role,
   });
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", { path: "/" });
+  res.json({ success: true });
 });
 
 export default router;

@@ -10,6 +10,7 @@ import publicReportRoutes from "./routes/publicReport";
 import adminRoutes from "./routes/admin";
 import userSubjectsRouter from "./routes/userSubjects";
 import userRouter from "./routes/user";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.options("*", cors(corsOptions)); // <-- Ensure this uses the same options
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
+app.use(cookieParser());
 
 // Public routes (no JWT)
 app.use("/api", publicReportRoutes);
