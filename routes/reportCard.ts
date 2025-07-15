@@ -257,18 +257,17 @@ router.post("/:id/send-sms", async (req, res) => {
       const reportCardTitle = reportCard?.title || "";
       const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name} ប្រចាំ ${reportCardTitle}: ${reportUrl}`;
 
-      // Insert the token into the DB (create or update)
+      // Insert or update the token for this student/reportCard
       await db.insert(reportCardTokens).values({
         studentId: student.id,
         reportCardId,
         token,
-        // createdAt will default to now
       }).onConflictDoUpdate({
         target: [reportCardTokens.studentId, reportCardTokens.reportCardId],
         set: {
           token, // override with new token
-          createdAt: new Date(), // update timestamp if you want
-          used: false, // reset used flag if you use it
+          createdAt: new Date(), // update timestamp
+          used: false, // reset used flag
         },
       });
 
@@ -304,7 +303,7 @@ router.post("/:id/send-sms", async (req, res) => {
         results.push({
           student: student.name,
           phone: student.parentPhone,
-          formattedPhone: toPlasgateFormat(student.parentPhone),
+          formattedPhone,
           status: "failed",
           error: smsError.response?.data || smsError.message,
         });
@@ -320,6 +319,7 @@ router.post("/:id/send-sms", async (req, res) => {
       skippedCount: results.filter((r) => r.status === "skipped").length,
     });
   } catch (err: any) {
+    console.error("Send SMS error:", err); // Add error logging
     res.status(500).json({ error: "Failed to send report card SMS" });
   }
 });
