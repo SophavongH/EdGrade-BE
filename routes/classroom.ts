@@ -10,7 +10,8 @@ router.get("/", async (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  // Get all classrooms for the user
+
+  // Get classrooms for the user
   const classroomsList = await db
     .select()
     .from(classroomsTable)
@@ -19,16 +20,13 @@ router.get("/", async (req, res) => {
   // For each classroom, count students
   const result = [];
   for (const cls of classroomsList) {
-    const students = await db
+    const count = await db
       .select()
       .from(classroomStudents)
       .where(eq(classroomStudents.classroomId, cls.id));
-    console.log("Classroom", cls.id, "students:", students); // <-- Add here
-    const studentCount = students.length;
-
     result.push({
       ...cls,
-      totalStudents: studentCount,
+      totalStudents: count.length,
     });
   }
 
