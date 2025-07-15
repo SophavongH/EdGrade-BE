@@ -19,11 +19,11 @@ router.get("/", async (req, res) => {
   // For each classroom, count students
   const result = [];
   for (const cls of classroomsList) {
-    const studentCount = await db
+    const students = await db
       .select()
       .from(classroomStudents)
-      .where(eq(classroomStudents.classroomId, cls.id))
-      .then(rows => rows.length);
+      .where(eq(classroomStudents.classroomId, cls.id)); // <-- Use classroomStudents.classroomId
+    const studentCount = students.length;
 
     result.push({
       ...cls,
