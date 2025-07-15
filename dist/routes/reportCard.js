@@ -69,6 +69,7 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
 });
 // Create report card (only for classroom owner)
 router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
+    console.log("Create Report Card body:", req.body); // <-- Add this line
     if (!req.user || !req.user.id)
         return res.status(401).json({ error: "Unauthorized" });
     const classroomId = parseInt(req.params.classroomId);
@@ -199,6 +200,17 @@ router.get("/report/:token", async (req, res) => {
 router.post("/:id/send-sms", async (req, res) => {
     const reportCardId = parseInt(req.params.id);
     const { studentIds } = req.body;
+    console.log("SMS Route - reportCardId:", reportCardId);
+    console.log("SMS Route - studentIds:", studentIds);
+    console.log("SMS Route - user:", req.user);
+    if (!req.user || !req.user.id) {
+        console.error("SMS Route - No user authenticated");
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    if (!studentIds || !Array.isArray(studentIds)) {
+        console.error("SMS Route - Invalid studentIds:", studentIds);
+        return res.status(400).json({ error: "Missing or invalid studentIds" });
+    }
     function toPlasgateFormat(phone) {
         if (!phone)
             return "";
@@ -212,6 +224,25 @@ router.post("/:id/send-sms", async (req, res) => {
         return phone;
     }
     try {
+        // Check if report card exists and user has access
+        const [reportCard] = await drizzle_1.db
+            .select()
+            .from(schema_1.reportCards)
+            .where((0, drizzle_orm_1.eq)(schema_1.reportCards.id, reportCardId));
+        if (!reportCard) {
+            console.error("SMS Route - Report card not found:", reportCardId);
+            return res.status(404).json({ error: "Report card not found" });
+        }
+        // Check classroom ownership
+        const [classroom] = await drizzle_1.db
+            .select()
+            .from(schema_1.classrooms)
+            .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.classrooms.id, reportCard.classroomId), (0, drizzle_orm_1.eq)(schema_1.classrooms.userId, req.user.id)));
+        if (!classroom) {
+            console.error("SMS Route - Classroom access denied");
+            return res.status(403).json({ error: "Access denied" });
+        }
+        // Fetch students
         const studentList = await drizzle_1.db
             .select({
             id: schema_1.students.id,
@@ -220,6 +251,7 @@ router.post("/:id/send-sms", async (req, res) => {
         })
             .from(schema_1.students)
             .where((0, drizzle_orm_1.inArray)(schema_1.students.id, studentIds));
+        console.log("SMS Route - Found students:", studentList.length);
         const results = [];
         for (const student of studentList) {
             if (!student.parentPhone || student.parentPhone.trim() === "") {
@@ -234,25 +266,37 @@ router.post("/:id/send-sms", async (req, res) => {
             const formattedPhone = toPlasgateFormat(student.parentPhone);
             const token = crypto_1.default.randomBytes(32).toString("hex");
             const reportUrl = `${process.env.FRONTEND_URL}/report/${token}`;
-            // Fetch the report card to get its title
-            const [reportCard] = await drizzle_1.db.select().from(schema_1.reportCards).where((0, drizzle_orm_1.eq)(schema_1.reportCards.id, reportCardId));
-            const reportCardTitle = reportCard?.title || "";
+            const reportCardTitle = reportCard.title || "";
             const smsMessage = `សូមចូលមើលរបាយការណ៍កូនអ្នក ${student.name} ប្រចាំ ${reportCardTitle}: ${reportUrl}`;
-            // Insert the token into the DB (create or update)
-            await drizzle_1.db.insert(schema_1.reportCardTokens).values({
-                studentId: student.id,
-                reportCardId,
-                token,
-                // createdAt will default to now
-            }).onConflictDoUpdate({
-                target: [schema_1.reportCardTokens.studentId, schema_1.reportCardTokens.reportCardId],
-                set: {
-                    token, // override with new token
-                    createdAt: new Date(), // update timestamp if you want
-                    used: false, // reset used flag if you use it
-                },
-            });
-            console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
+            console.log("SMS Route - Processing student:", student.name, "Phone:", formattedPhone);
+            // Insert or update the token for this student/reportCard
+            try {
+                await drizzle_1.db.insert(schema_1.reportCardTokens).values({
+                    studentId: student.id,
+                    reportCardId,
+                    token,
+                }).onConflictDoUpdate({
+                    target: [schema_1.reportCardTokens.studentId, schema_1.reportCardTokens.reportCardId],
+                    set: {
+                        token, // override with new token
+                        createdAt: new Date(), // update timestamp
+                        used: false, // reset used flag
+                    },
+                });
+                console.log("SMS Route - Token saved for student:", student.name);
+            }
+            catch (tokenError) {
+                console.error("SMS Route - Token save error:", tokenError);
+                results.push({
+                    student: student.name,
+                    phone: student.parentPhone,
+                    formattedPhone,
+                    status: "failed",
+                    error: "Failed to save token",
+                });
+                continue;
+            }
+            // Send SMS
             try {
                 const response = await axios_1.default.post(`https://cloudapi.plasgate.com/rest/send?private_key=${process.env.PLASGATE_API_KEY}`, {
                     sender: process.env.PLASGATE_SENDER,
@@ -264,7 +308,7 @@ router.post("/:id/send-sms", async (req, res) => {
                         "X-Secret": process.env.PLASGATE_X_SECRET,
                     },
                 });
-                console.log("PlasGate response:", response.data);
+                console.log("SMS Route - PlasGate response for", student.name, ":", response.data);
                 results.push({
                     student: student.name,
                     phone: student.parentPhone,
@@ -275,16 +319,17 @@ router.post("/:id/send-sms", async (req, res) => {
                 });
             }
             catch (smsError) {
-                console.error("PlasGate error:", smsError.response?.data || smsError.message);
+                console.error("SMS Route - PlasGate error for", student.name, ":", smsError.response?.data || smsError.message);
                 results.push({
                     student: student.name,
                     phone: student.parentPhone,
-                    formattedPhone: toPlasgateFormat(student.parentPhone),
+                    formattedPhone,
                     status: "failed",
                     error: smsError.response?.data || smsError.message,
                 });
             }
         }
+        console.log("SMS Route - Final results:", results);
         res.json({
             success: true,
             results,
@@ -295,7 +340,11 @@ router.post("/:id/send-sms", async (req, res) => {
         });
     }
     catch (err) {
-        res.status(500).json({ error: "Failed to send report card SMS" });
+        console.error("SMS Route - Main error:", err);
+        res.status(500).json({
+            error: "Failed to send report card SMS",
+            details: err.message
+        });
     }
 });
 // Update subjects for a report card

@@ -13,14 +13,12 @@ const schema_1 = require("../database/schema");
 const router = (0, express_1.Router)();
 // JWT authentication middleware
 function authenticateJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
+    const token = req.cookies.token; // <-- get token from cookie
+    if (!token)
         return res.status(401).json({ error: "No token" });
-    const token = authHeader.split(" ")[1];
     try {
-        // The JWT payload includes id, email, name, role
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // <-- assign all fields, not just id/email
+        req.user = decoded;
         next();
     }
     catch {
@@ -37,7 +35,6 @@ router.post("/login", async (req, res) => {
         if (!user) {
             return res.status(401).json({ success: false, error: "Email is invalid" });
         }
-        // Check if the account is deactivated
         if (user.status === "deactivated") {
             return res.status(403).json({ error: "Account is suspended." });
         }
@@ -51,10 +48,17 @@ router.post("/login", async (req, res) => {
             name: user.name,
             role: user.role,
         }, process.env.JWT_SECRET, { expiresIn: "12h" });
-        // Return user object!
+        // Set JWT as HTTP-only cookie
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            domain: ".edgrade.me", // <-- ADD THIS LINE
+            maxAge: 12 * 60 * 60 * 1000,
+            path: "/",
+        });
         return res.json({
             success: true,
-            token,
             role: user.role,
             user: { id: user.id, email: user.email, name: user.name, role: user.role }
         });
@@ -83,5 +87,9 @@ router.get("/me", authenticateJWT, async (req, res) => {
         name: user.name,
         role: user.role,
     });
+});
+router.post("/logout", (req, res) => {
+    res.clearCookie("token", { path: "/" });
+    res.json({ success: true });
 });
 exports.default = router;

@@ -15,6 +15,7 @@ const publicReport_1 = __importDefault(require("./routes/publicReport"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const userSubjects_1 = __importDefault(require("./routes/userSubjects"));
 const user_1 = __importDefault(require("./routes/user"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const allowedOrigins = [
@@ -22,11 +23,12 @@ const allowedOrigins = [
     "https://edgrade-ofs-pthglu-sophavonghs-projects.vercel.app",
     "https://edgrade-git-main-sophavonghs-projects.vercel.app",
     "https://www.edgrade.me",
-    "https://edgrade.me"
+    "https://edgrade.me",
+    "https://api.edgrade.me" // <-- Add your backend custom domain here!
 ];
 const corsOptions = {
     origin: (origin, callback) => {
-        console.log("CORS Origin:", origin); // <-- Add this line
+        console.log("CORS Origin:", origin);
         if (!origin)
             return callback(null, true);
         if (allowedOrigins.includes(origin) ||
@@ -38,11 +40,13 @@ const corsOptions = {
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    exposedHeaders: ["Set-Cookie"],
 };
 app.use((0, cors_1.default)(corsOptions));
-app.options("*", (0, cors_1.default)(corsOptions)); // <-- Ensure this uses the same options
+app.options("*", (0, cors_1.default)(corsOptions));
 app.use(express_1.default.json({ limit: '20mb' }));
 app.use(express_1.default.urlencoded({ limit: '20mb', extended: true }));
+app.use((0, cookie_parser_1.default)());
 // Public routes (no JWT)
 app.use("/api", publicReport_1.default);
 // Auth routes (no JWT)
