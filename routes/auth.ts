@@ -53,7 +53,8 @@ router.post("/login", async (req: Request, res: Response) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+      domain: ".edgrade.me",
+      maxAge: 12 * 60 * 60 * 1000,
       path: "/",
     });
     return res.json({
