@@ -79,6 +79,7 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
 
 // Create report card (only for classroom owner)
 router.post("/classrooms/:classroomId/report-cards", async (req, res) => {
+  console.log("Create Report Card body:", req.body); // <-- Add this line
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
   const classroomId = parseInt(req.params.classroomId);
   const { title, subjects } = req.body; // subjects: string[]
