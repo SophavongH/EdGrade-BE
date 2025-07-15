@@ -51,8 +51,9 @@ router.post("/login", async (req: Request, res: Response) => {
     // Set JWT as HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, // only send over HTTPS in production
+      secure: true,
       sameSite: "none",
+      domain: ".edgrade.me", // <-- add this line
       maxAge: 12 * 60 * 60 * 1000, // 12 hours
       path: "/",
     });
