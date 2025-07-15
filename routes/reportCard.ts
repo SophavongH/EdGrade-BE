@@ -68,7 +68,7 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
       createdBy: reportCards.createdBy,
       createdAt: reportCards.createdAt,
       creatorName: usersTable.name,
-      subjects: reportCards.subjects, // <-- ADD THIS LINE
+      subjects: reportCards.subjects, // <-- This line must be present!
     })
     .from(reportCards)
     .where(eq(reportCards.classroomId, classroomId))
@@ -263,7 +263,14 @@ router.post("/:id/send-sms", async (req, res) => {
         reportCardId,
         token,
         // createdAt will default to now
-      }).onConflictDoNothing(); // Prevent duplicate tokens for same student/report
+      }).onConflictDoUpdate({
+        target: [reportCardTokens.studentId, reportCardTokens.reportCardId],
+        set: {
+          token, // override with new token
+          createdAt: new Date(), // update timestamp if you want
+          used: false, // reset used flag if you use it
+        },
+      });
 
       console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
 

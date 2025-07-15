@@ -59,6 +59,7 @@ router.get("/classrooms/:classroomId/report-cards", async (req, res) => {
         createdBy: schema_1.reportCards.createdBy,
         createdAt: schema_1.reportCards.createdAt,
         creatorName: schema_1.usersTable.name,
+        subjects: schema_1.reportCards.subjects, // <-- This line must be present!
     })
         .from(schema_1.reportCards)
         .where((0, drizzle_orm_1.eq)(schema_1.reportCards.classroomId, classroomId))
@@ -243,7 +244,14 @@ router.post("/:id/send-sms", async (req, res) => {
                 reportCardId,
                 token,
                 // createdAt will default to now
-            }).onConflictDoNothing(); // Prevent duplicate tokens for same student/report
+            }).onConflictDoUpdate({
+                target: [schema_1.reportCardTokens.studentId, schema_1.reportCardTokens.reportCardId],
+                set: {
+                    token, // override with new token
+                    createdAt: new Date(), // update timestamp if you want
+                    used: false, // reset used flag if you use it
+                },
+            });
             console.log("Sending SMS to:", formattedPhone, "with message:", smsMessage);
             try {
                 const response = await axios_1.default.post(`https://cloudapi.plasgate.com/rest/send?private_key=${process.env.PLASGATE_API_KEY}`, {

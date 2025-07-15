@@ -64,6 +64,7 @@ exports.reportCardTokens = (0, pg_core_1.pgTable)("report_card_tokens", {
     studentId: (0, pg_core_1.uuid)("student_id").notNull(),
     reportCardId: (0, pg_core_1.integer)("report_card_id").notNull(),
     token: (0, pg_core_1.varchar)("token", { length: 64 }).notNull().unique(),
+    used: (0, pg_core_1.boolean)("used").default(false), // <-- Add this line
     createdAt: (0, pg_core_1.timestamp)("created_at", { withTimezone: true }).defaultNow(),
 });
 exports.userSubjects = (0, pg_core_1.pgTable)("user_subjects", {

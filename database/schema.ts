@@ -68,6 +68,7 @@ export const reportCardTokens = pgTable("report_card_tokens", {
   studentId: uuid("student_id").notNull(),
   reportCardId: integer("report_card_id").notNull(),
   token: varchar("token", { length: 64 }).notNull().unique(),
+  used: boolean("used").default(false), // <-- Add this line
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
